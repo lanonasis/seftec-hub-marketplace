@@ -1,22 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SEFTEC Hub Marketplace
 
-## Getting Started
+An AI-augmented marketplace UI featuring a floating chat assistant, product/service discovery helpers, and optional payment demos. This repo is the branded variant of “Floating Chat Magic” and contains the same core components packaged with SEFTEC naming and examples.
 
-First, run the development server:
+## Purpose
+- Showcase an on-site AI assistant that guides users to services or vendors
+- Provide a themed, plug-and-play chat widget with voice input and dark mode
+- Demonstrate simple cart/checkout flows with Stripe for demos
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Core Features
+- Floating chat (`src/components/FloatingChat.tsx`) and enhanced mode (`EnhancedFloatingChat.tsx`)
+- Marketplace helpers and example search (`src/lib/vibefind-service.ts`)
+- AI integration helpers (`src/lib/seftec-ai.ts`) and voice service (`src/lib/voice-service.ts`)
+- Payment modal (`src/components/PaymentModal.tsx`) for demo flows
+- Theme system and switcher (`src/lib/themes.ts`, `src/components/ThemeSwitcher.tsx`)
+- Type-safe utils and models (`src/lib/types.ts`, `src/lib/utils.ts`)
+- Example API routes (extend as needed): `/api/chat`, `/api/search/handymen`
+
+## Environment & Config
+Copy `.env.example` to `.env.local` and set:
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+`next.config.js` disables ESLint during builds for faster CI and whitelists image domains (Unsplash, Same assets). Tailwind + shadcn/ui is configured via `tailwind.config.ts` and `components.json`.
+
+## Run & Build
+- Install: `bun install` (or `npm install`)
+- Dev: `bun run dev` (or `npm run dev`) → http://localhost:3000
+- Build/Start: `bun run build` then `bun run start`
+- Lint/Format: `bun run lint` and `bun run format`
+
+## Directory Overview
+```
+src/
+  app/                # App Router entrypoints and pages
+  components/         # Chat, theme, payment, dashboard components
+  lib/                # AI, voice, themes, types, utilities, services
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Roadmap Ideas
+- Persist chat sessions and context
+- Add vendor onboarding and listing management
+- Expand payment options and receipts
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
