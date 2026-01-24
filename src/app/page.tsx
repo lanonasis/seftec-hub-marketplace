@@ -1,8 +1,12 @@
 "use client"
 
-import FloatingChat from '@/components/FloatingChat'
-import { Heart, MapPin, Star, Clock, Users, Moon, Sun, Wrench, Phone, CheckCircle, Calendar } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import UserButton from '@/components/UserButton'
+import { Heart, MapPin, Star, Clock, Users, Moon, Sun, Wrench, Phone, CheckCircle, Calendar, Sparkles } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+
+const EnhancedFloatingChat = dynamic(() => import('@/components/EnhancedFloatingChat'), { ssr: false })
 
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -104,7 +108,7 @@ export default function Home() {
       }`}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
                 isDarkMode
                   ? 'bg-gradient-to-r from-blue-500 to-purple-500'
@@ -119,18 +123,19 @@ export default function Home() {
               }`}>
                 SEFTEC Hub
               </h1>
-            </div>
+            </Link>
             <div className="flex items-center gap-4">
-              <button className={`text-sm transition-colors ${
+              <Link href="/" className={`text-sm font-semibold transition-colors ${
+                isDarkMode ? 'text-blue-400' : 'text-pink-600'
+              }`}>
+                Marketplace
+              </Link>
+              <Link href="/vibefind" className={`flex items-center gap-1 text-sm transition-colors ${
                 isDarkMode ? 'text-gray-300 hover:text-blue-400' : 'text-gray-600 hover:text-pink-600'
               }`}>
-                For You
-              </button>
-              <button className={`text-sm transition-colors ${
-                isDarkMode ? 'text-gray-300 hover:text-blue-400' : 'text-gray-600 hover:text-pink-600'
-              }`}>
-                Nearby
-              </button>
+                <Sparkles className="h-4 w-4" />
+                <span>VibeFind</span>
+              </Link>
               <button className={`text-sm transition-colors ${
                 isDarkMode ? 'text-gray-300 hover:text-blue-400' : 'text-gray-600 hover:text-pink-600'
               }`}>
@@ -148,6 +153,9 @@ export default function Home() {
               >
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+
+              {/* User Button */}
+              <UserButton isDarkMode={isDarkMode} />
             </div>
           </div>
         </div>
@@ -414,7 +422,7 @@ export default function Home() {
       </section>
 
       {/* Floating Chat */}
-      <FloatingChat />
+      <EnhancedFloatingChat />
 
       {/* Demo Instructions */}
       <div className={`fixed bottom-4 left-4 backdrop-blur-sm border rounded-2xl p-4 max-w-sm shadow-lg transition-colors duration-500 ${
