@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["*.preview.same-app.com"],
+  allowedDevOrigins: ["*.preview.same-app.com", "192.168.*.*", "localhost"],
   eslint: {
     // Disable ESLint during builds for rapid deployment
     ignoreDuringBuilds: true,
