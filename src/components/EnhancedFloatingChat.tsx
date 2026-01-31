@@ -1,27 +1,17 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
-  MessageCircle,
   X,
   Send,
-  Mic,
-  MicOff,
-  Volume2,
-  VolumeX,
   Sparkles,
-  Moon,
-  Sun,
   Loader2,
-  Award,
-  Zap,
-  Star
+  Trash2,
+  Minimize2
 } from 'lucide-react'
-import { voiceService } from '@/lib/voice-service'
 import { themes, Theme, getThemeClasses } from '@/lib/themes'
-import { GamificationEngine, UserStats, POINT_VALUES } from '@/lib/gamification'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 
 interface Message {
@@ -36,11 +26,11 @@ interface Message {
 interface EnhancedFloatingChatProps {
   className?: string
   initialTheme?: Theme
-  userStats?: UserStats
-  onStatsUpdate?: (stats: UserStats) => void
 }
 
-// SEFTEC Hub Logo Component
+const STORAGE_KEY = 'seftec-chat-messages'
+const THEME_STORAGE_KEY = 'seftec-chat-theme'
+
 const SeftecLogo = ({ className = "h-6 w-6" }: { className?: string }) => (
   <svg viewBox="0 0 36 36" className={className} xmlns="http://www.w3.org/2000/svg">
     <title>SEFTEC Hub Logo</title>
@@ -49,109 +39,115 @@ const SeftecLogo = ({ className = "h-6 w-6" }: { className?: string }) => (
   </svg>
 )
 
+const TypingIndicator = ({ isDarkTheme }: { isDarkTheme: boolean }) => (
+  <div className="flex items-center space-x-1">
+    {[0, 1, 2].map((i) => (
+      <motion.div
+        key={i}
+        className={`h-2 w-2 rounded-full ${isDarkTheme ? 'bg-blue-400' : 'bg-pink-400'}`}
+        animate={{
+          y: [0, -6, 0],
+          opacity: [0.5, 1, 0.5]
+        }}
+        transition={{
+          duration: 0.6,
+          repeat: Infinity,
+          delay: i * 0.15,
+          ease: "easeInOut"
+        }}
+      />
+    ))}
+  </div>
+)
+
 const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
   className,
-  initialTheme = 'sunset',
-  userStats,
-  onStatsUpdate
+  initialTheme = 'sunset'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<Theme>(initialTheme)
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hey beautiful! 💖 I'm your SEFTEC discovery assistant. What vibe are you feeling today?",
-      sender: 'ai',
-      timestamp: new Date(),
-      suggestions: ["Find me unlimited drinks 🍹", "Cool spa getaway 🧘‍♀️", "Find a handyman 🔧", "Fun activities nearby 🎉"]
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [aiProvider, setAIProvider] = useState<'deepseek' | 'perplexity'>('deepseek')
-
-  // Voice features
-  const [isListening, setIsListening] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(true)
-  const [isPlaying, setIsPlaying] = useState(false)
-
-  // Gamification
-  const [showPointsAnimation, setShowPointsAnimation] = useState(false)
-  const [pointsEarned, setPointsEarned] = useState(0)
-  const [showLevelUp, setShowLevelUp] = useState(false)
-
-  const chatRef = useRef<HTMLDivElement>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const themeConfig = getThemeClasses(currentTheme)
   const isDarkTheme = currentTheme === 'cyberpunk' || currentTheme === 'galaxy'
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const defaultWelcomeMessage: Message = {
+    id: '1',
+    text: "Hey there! 💖 I'm your SEFTEC discovery assistant. What vibe are you feeling today?",
+    sender: 'ai',
+    timestamp: new Date(),
+    suggestions: ["Find me unlimited drinks 🍹", "Cool spa getaway 🧘‍♀️", "Find a handyman 🔧", "Fun activities nearby 🎉"]
   }
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMessages = localStorage.getItem(STORAGE_KEY)
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+        
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages)
+          const hydratedMessages = parsed.map((msg: Message) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+          setMessages(hydratedMessages.length > 0 ? hydratedMessages : [defaultWelcomeMessage])
+        } else {
+          setMessages([defaultWelcomeMessage])
+        }
+        
+        if (savedTheme && themes[savedTheme as Theme]) {
+          setCurrentTheme(savedTheme as Theme)
+        }
+      } catch {
+        setMessages([defaultWelcomeMessage])
+      }
+      setIsInitialized(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isInitialized && messages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
+      } catch {}
+    }
+  }, [messages, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, currentTheme)
+      } catch {}
+    }
+  }, [currentTheme, isInitialized])
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [])
+
+  useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
-  // Award points for user actions
-  const awardPoints = (points: number, reason: string) => {
-    if (!userStats || !onStatsUpdate) return
-
-    const result = GamificationEngine.awardPoints(userStats, points, reason)
-    onStatsUpdate(result.newStats)
-
-    setPointsEarned(points)
-    setShowPointsAnimation(true)
-    setTimeout(() => setShowPointsAnimation(false), 2000)
-
-    if (result.levelUp) {
-      setShowLevelUp(true)
-      setTimeout(() => setShowLevelUp(false), 3000)
+  useEffect(() => {
+    if (isExpanded && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100)
     }
-  }
+  }, [isExpanded])
 
-  const handleVoiceInput = async () => {
-    if (!voiceService.isSupported().speechRecognition) {
-      alert('Speech recognition not supported in your browser')
-      return
-    }
-
-    if (isListening) {
-      voiceService.stopListening()
-      setIsListening(false)
-      return
-    }
-
-    try {
-      setIsListening(true)
-      const transcript = await voiceService.startListening()
-      setInputText(transcript)
-      setIsListening(false)
-      awardPoints(POINT_VALUES.CHAT_MESSAGE, 'voice input')
-    } catch (error) {
-      console.error('Voice input error:', error)
-      setIsListening(false)
-    }
-  }
-
-  const handleVoiceOutput = async (text: string) => {
-    if (!voiceService.isSupported().speechSynthesis || !voiceEnabled) return
-
-    try {
-      setIsPlaying(true)
-      await voiceService.speak(text, { voice: 'female', rate: 0.9 })
-      setIsPlaying(false)
-    } catch (error) {
-      console.error('Voice output error:', error)
-      setIsPlaying(false)
-    }
+  const handleClearConversation = () => {
+    setMessages([defaultWelcomeMessage])
   }
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim()
-    if (!messageText) return
+    if (!messageText || isTyping) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -164,16 +160,20 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     setInputText('')
     setIsTyping(true)
 
-    // Award points for chatting
-    awardPoints(POINT_VALUES.CHAT_MESSAGE, 'sent message')
-
     try {
+      const conversationHistory = messages
+        .filter(m => m.sender === 'user' || m.sender === 'ai')
+        .map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }))
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          provider: aiProvider
+          conversationHistory
         }),
       })
 
@@ -189,9 +189,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
       }
 
       setMessages(prev => [...prev, aiMessage])
-
-      // Voice output for AI response
-      handleVoiceOutput(aiResponse.text)
 
     } catch (error) {
       console.error('Chat error:', error)
@@ -211,109 +208,34 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     }
   }
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isExpanded) return
-    setIsDragging(true)
-
-    const startX = e.clientX - dragPosition.x
-    const startY = e.clientY - dragPosition.y
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setDragPosition({
-        x: e.clientX - startX,
-        y: e.clientY - startY
-      })
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isTyping) {
+      e.preventDefault()
+      handleSendMessage()
     }
-
-    const handleMouseUp = () => {
-      setIsDragging(false)
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
   }
 
   return (
-    <div
-      className="fixed z-50 select-none"
-      style={{
-        left: dragPosition.x + 20,
-        top: dragPosition.y + 20,
-        cursor: isDragging ? 'grabbing' : 'grab'
-      }}
-    >
-      {/* Points Animation */}
-      <AnimatePresence>
-        {showPointsAnimation && (
-          <motion.div
-            initial={{ opacity: 0, y: 0, scale: 0.5 }}
-            animate={{ opacity: 1, y: -30, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.5 }}
-            className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-10"
-          >
-            <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${themeConfig.gradient} text-white text-sm font-bold shadow-lg`}>
-              +{pointsEarned} XP
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Level Up Animation */}
-      <AnimatePresence>
-        {showLevelUp && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0 }}
-            className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-10"
-          >
-            <div className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full text-sm font-bold shadow-xl">
-              🎉 LEVEL UP! 🎉
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Chat Bubble */}
+    <div className={`fixed z-50 ${className || ''}`} style={{ bottom: 20, right: 20 }}>
       <AnimatePresence>
         {!isExpanded && (
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              transition: {
-                type: "spring" as const,
-                stiffness: 400,
-                damping: 15
-              }
-            }}
-            whileHover={{
-              scale: 1.1,
-              transition: {
-                type: "spring" as const,
-                stiffness: 400,
-                damping: 15
-              }
-            }}
+            animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             exit={{ scale: 0, opacity: 0 }}
-            onMouseDown={handleMouseDown}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
             className="relative"
           >
             <Button
               variant="magic"
               size="floating"
               onClick={() => setIsExpanded(true)}
-              className={`relative overflow-hidden shadow-2xl bg-gradient-to-r ${themeConfig.floatingButton} animate-gradient`}
+              className={`relative overflow-hidden shadow-2xl bg-gradient-to-r ${themeConfig.floatingButton} animate-gradient h-14 w-14 rounded-full`}
             >
               <div className={`absolute inset-0 animate-gradient bg-gradient-to-r ${themeConfig.floatingButton}`} />
-
               <SeftecLogo className="relative z-10 h-7 w-7" />
-
-              {/* Enhanced notification badge */}
               <motion.div
                 className="absolute -top-1 -right-1 h-4 w-4 bg-red-400 rounded-full flex items-center justify-center"
                 animate={{ scale: [1, 1.2, 1] }}
@@ -321,141 +243,107 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
               >
                 <Sparkles className="h-2 w-2 text-white" />
               </motion.div>
-
-              {/* Level indicator */}
-              {userStats && (
-                <div className="absolute -bottom-1 -left-1 h-5 w-5 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-yellow-900">
-                  {userStats.currentLevel.level}
-                </div>
-              )}
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Expanded Chat Interface */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              transition: {
-                type: "spring" as const,
-                stiffness: 300,
-                damping: 20
-              }
-            }}
-            exit={{ opacity: 0, scale: 0.8, y: 50, transition: { duration: 0.2 } }}
-            className={`w-80 h-96 backdrop-blur-xl rounded-3xl shadow-2xl border overflow-hidden cursor-default ${themeConfig.surface}`}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`
+              w-[340px] sm:w-[380px] 
+              h-[500px] sm:h-[520px] 
+              backdrop-blur-xl rounded-3xl shadow-2xl border overflow-hidden 
+              flex flex-col
+              ${themeConfig.surface}
+            `}
             style={{
               background: isDarkTheme
-                ? 'linear-gradient(135deg, rgba(17,24,39,0.95) 0%, rgba(75,85,99,0.95) 100%)'
-                : 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)'
+                ? 'linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(75,85,99,0.98) 100%)'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)'
             }}
           >
-            {/* Enhanced Header */}
-            <div className={`flex items-center justify-between p-4 border-b ${
+            <div className={`flex items-center justify-between p-4 border-b shrink-0 ${
               isDarkTheme ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-100'
             }`}>
               <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-r ${themeConfig.primary}`}>
+                <div className={`h-9 w-9 rounded-full flex items-center justify-center bg-gradient-to-r ${themeConfig.primary}`}>
                   <SeftecLogo className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className={`font-semibold text-sm ${themeConfig.text}`}>
-                    SEFTEC Discovery
+                    SEFTEC Assistant
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <p className={`text-xs ${themeConfig.textSecondary}`}>
-                      AI: {aiProvider} ✨
-                    </p>
-                    {userStats && (
-                      <div className="flex items-center gap-1">
-                        <Award className="h-3 w-3 text-yellow-400" />
-                        <span className="text-xs text-yellow-600 font-medium">
-                          Lv.{userStats.currentLevel.level}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  <p className={`text-xs ${themeConfig.textSecondary}`}>
+                    Powered by AI ✨
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1">
-                {/* Voice Toggle */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setVoiceEnabled(!voiceEnabled)}
-                  className="h-8 w-8"
-                  title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
+                  onClick={handleClearConversation}
+                  className={`h-8 w-8 ${isDarkTheme ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-pink-100 text-gray-500'}`}
+                  title="Clear conversation"
                 >
-                  {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  <Trash2 className="h-4 w-4" />
                 </Button>
 
-                {/* Theme Switcher */}
                 <ThemeSwitcher
                   currentTheme={currentTheme}
                   onThemeChange={setCurrentTheme}
                   className="scale-75"
                 />
 
-                {/* AI Provider Toggle */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setAIProvider(aiProvider === 'deepseek' ? 'perplexity' : 'deepseek')}
-                  className="h-8 w-8 text-xs"
-                  title={`Switch to ${aiProvider === 'deepseek' ? 'Perplexity' : 'DeepSeek'}`}
-                >
-                  {aiProvider === 'deepseek' ? '🧠' : '🔍'}
-                </Button>
-
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsExpanded(false)}
-                  className="h-8 w-8"
+                  className={`h-8 w-8 ${isDarkTheme ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-pink-100 text-gray-500'}`}
                 >
-                  <X className="h-4 w-4" />
+                  <Minimize2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Messages with enhanced styling */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 h-60">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {messages.map((message) => (
                 <motion.div
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                       message.sender === 'user'
-                        ? `bg-gradient-to-r ${themeConfig.chatBubble} text-white`
+                        ? `bg-gradient-to-r ${themeConfig.chatBubble} text-white shadow-md`
                         : isDarkTheme
-                          ? 'bg-gray-800 text-gray-100 border border-gray-700'
-                          : 'bg-gray-50 text-gray-800 border border-gray-100'
+                          ? 'bg-gray-800 text-gray-100 border border-gray-700 shadow-sm'
+                          : 'bg-gray-50 text-gray-800 border border-gray-100 shadow-sm'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
-                    {message.provider && message.sender === 'ai' && (
-                      <p className="text-xs mt-1 opacity-60">
-                        powered by {message.provider}
-                      </p>
-                    )}
-                    {message.suggestions && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                    {message.suggestions && message.sender === 'ai' && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
                         {message.suggestions.map((suggestion, index) => (
                           <button
                             key={index}
                             onClick={() => handleSendMessage(suggestion)}
-                            className="text-xs bg-white/20 hover:bg-white/30 rounded-full px-2 py-1 transition-colors"
+                            disabled={isTyping}
+                            className={`text-xs rounded-full px-3 py-1.5 transition-all font-medium ${
+                              isDarkTheme
+                                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600'
+                                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm'
+                            } ${isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                           >
                             {suggestion}
                           </button>
@@ -468,75 +356,52 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
 
               {isTyping && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className={`rounded-2xl px-3 py-2 border ${
+                  <div className={`rounded-2xl px-4 py-3 border ${
                     isDarkTheme ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-100'
                   }`}>
-                    <div className="flex items-center space-x-2">
-                      <Loader2 className={`h-3 w-3 animate-spin ${
-                        isDarkTheme ? 'text-blue-400' : 'text-pink-400'
-                      }`} />
-                      <span className="text-xs text-gray-500">AI thinking...</span>
-                    </div>
+                    <TypingIndicator isDarkTheme={isDarkTheme} />
                   </div>
                 </motion.div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Enhanced Input with Voice */}
-            <div className={`p-4 border-t ${
-              isDarkTheme ? 'border-gray-700 bg-gray-900/50' : 'border-pink-100 bg-white/50'
+            <div className={`p-4 border-t shrink-0 ${
+              isDarkTheme ? 'border-gray-700 bg-gray-900/50' : 'border-pink-100 bg-white/80'
             }`}>
               <div className="flex items-center gap-2">
                 <div className="flex-1 relative">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSendMessage()}
-                    placeholder="Tell me what you're in the mood for..."
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask me anything..."
                     disabled={isTyping}
-                    className={`w-full px-3 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 transition-colors ${
+                    className={`w-full px-4 py-3 border rounded-full text-sm focus:outline-none focus:ring-2 transition-all ${
                       isDarkTheme
                         ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400'
-                        : 'bg-white/80 border-pink-200 text-gray-800 placeholder-gray-500 focus:ring-pink-300'
+                        : 'bg-white border-gray-200 text-gray-800 placeholder-gray-500 focus:ring-pink-300'
                     } ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
-
-                {/* Voice Input Button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleVoiceInput}
-                  disabled={isTyping}
-                  className={`h-8 w-8 ${
-                    isListening
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : isDarkTheme
-                        ? 'text-blue-400 hover:bg-gray-800'
-                        : 'text-pink-500 hover:bg-pink-100'
-                  }`}
-                >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
-
                 <Button
                   onClick={() => handleSendMessage()}
                   disabled={isTyping || !inputText.trim()}
                   size="icon"
-                  className={`h-8 w-8 bg-gradient-to-r ${themeConfig.primary} ${
-                    (isTyping || !inputText.trim()) ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`h-11 w-11 rounded-full bg-gradient-to-r ${themeConfig.primary} shadow-md transition-all ${
+                    (isTyping || !inputText.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg'
                   }`}
                 >
                   {isTyping ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Send className="h-5 w-5 text-white" />
                   )}
                 </Button>
               </div>
