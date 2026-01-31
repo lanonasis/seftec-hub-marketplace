@@ -62,7 +62,7 @@ const TypingIndicator = ({ isDarkTheme }: { isDarkTheme: boolean }) => (
 
 const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
   className,
-  initialTheme = 'sunset'
+  initialTheme = 'cyberpunk'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<Theme>(initialTheme)
