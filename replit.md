@@ -32,6 +32,15 @@ src/
 - All dev origins allowed for proxy support
 
 ## Recent Changes
+- 2026-01-31: Enhanced floating chatbox functionality
+  - Integrated OpenAI via Replit AI Integrations (no API key needed)
+  - Repositioned chat to bottom-right corner (standard UX)
+  - Added clear conversation button
+  - Added message persistence with localStorage
+  - Improved mobile responsiveness with better sizing
+  - Added polished typing indicator animation with bouncing dots
+  - Simplified and cleaned up component code
+
 - 2026-01-30: Initial Replit environment setup
   - Configured Next.js to use port 5000
   - Allowed all dev origins for Replit proxy compatibility

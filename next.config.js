@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["*"],
+  allowedDevOrigins: [
+    "*.replit.dev",
+    "*.replit.app",
+    "*.picard.replit.dev",
+    "*.kirk.replit.dev",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0"
+  ],
   images: {
     unoptimized: true,
     remotePatterns: [
