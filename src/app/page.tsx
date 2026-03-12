@@ -11,8 +11,8 @@ const EnhancedFloatingChat = dynamic(() => import('@/components/EnhancedFloating
 
 const heroSlides = [
   {
-    line1: "Yo, Lagos \u2014",
-    line2: "where's your next vibe? \ud83d\udd25",
+    line1: "Yo, Lagos —",
+    line2: "where's your next vibe? 🔥",
     subtitle: "Real events. Real handymen. No cap, no wahala."
   },
   {
@@ -25,7 +25,10 @@ const heroSlides = [
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [heroIndex, setHeroIndex] = useState(0)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -40,15 +43,7 @@ export default function Home() {
       const timer = setTimeout(() => {
         window.dispatchEvent(new CustomEvent('leo-auto-open', {
           detail: {
-            message: "Babe, vibe or fix? Tell me \ud83d\udc40",
-            onReply: (text: string) => {
-              const lower = text.toLowerCase()
-              if (lower.includes('party') || lower.includes('vibe') || lower.includes('event') || lower.includes('rave')) {
-                router.push('/vibefind')
-              } else if (lower.includes('fix') || lower.includes('ac') || lower.includes('handyman') || lower.includes('plumb') || lower.includes('electric')) {
-                router.push('/handyman')
-              }
-            }
+            message: "Babe, vibe or fix? Tell me 👀",
           }
         }))
         sessionStorage.setItem('seftec-leo-auto-opened', 'true')
@@ -57,29 +52,28 @@ export default function Home() {
     }
   }, [router])
 
+  // Only apply dark classes after hydration to avoid mismatch
+  const dm = mounted && isDarkMode
+
   return (
     <div className={`min-h-screen transition-all duration-500 ${
-      isDarkMode
+      dm
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'
         : 'bg-gradient-to-br from-pink-50 via-white to-purple-50'
     }`}>
       <header className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-colors duration-500 ${
-        isDarkMode
-          ? 'bg-gray-900/80 border-gray-700'
-          : 'bg-white/80 border-pink-100'
+        dm ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-pink-100'
       }`}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                isDarkMode
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500'
-                  : 'bg-gradient-to-r from-pink-500 to-purple-500'
+                dm ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-pink-500 to-purple-500'
               }`}>
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <h1 className={`text-xl font-bold ${
-                isDarkMode
+                dm
                   ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'
                   : 'bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent'
               }`}>
@@ -90,12 +84,12 @@ export default function Home() {
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className={`p-2 rounded-full transition-all duration-300 ${
-                  isDarkMode
+                  dm
                     ? 'bg-yellow-400/20 text-yellow-400 hover:bg-yellow-400/30'
                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                 }`}
               >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {dm ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
               <UserButton isDarkMode={isDarkMode} />
             </div>
@@ -113,12 +107,12 @@ export default function Home() {
               }`}
             >
               <h2 className={`text-5xl md:text-6xl font-bold mb-6 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
+                dm ? 'text-white' : 'text-gray-900'
               }`}>
                 {slide.line1}
                 <br />
                 <span className={`${
-                  isDarkMode
+                  dm
                     ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent'
                     : 'bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent'
                 }`}>
@@ -126,7 +120,7 @@ export default function Home() {
                 </span>
               </h2>
               <p className={`text-xl md:text-2xl max-w-2xl mx-auto ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                dm ? 'text-gray-300' : 'text-gray-600'
               }`}>
                 {slide.subtitle}
               </p>
@@ -139,8 +133,8 @@ export default function Home() {
                 onClick={() => setHeroIndex(i)}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   i === heroIndex
-                    ? `w-8 ${isDarkMode ? 'bg-purple-400' : 'bg-purple-500'}`
-                    : `w-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`
+                    ? `w-8 ${dm ? 'bg-purple-400' : 'bg-purple-500'}`
+                    : `w-2 ${dm ? 'bg-gray-600' : 'bg-gray-300'}`
                 }`}
               />
             ))}
@@ -150,20 +144,20 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-8 mb-20">
           <Link href="/handyman">
             <div className={`group relative overflow-hidden rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
-              isDarkMode
+              dm
                 ? 'bg-gradient-to-br from-blue-900/50 to-purple-900/50 border border-blue-700/50 hover:border-blue-500'
                 : 'bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 hover:border-blue-400 hover:shadow-2xl'
             }`}>
               <div className="relative z-10">
                 <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-6 ${
-                  isDarkMode ? 'bg-blue-500/20' : 'bg-blue-500/10'
+                  dm ? 'bg-blue-500/20' : 'bg-blue-500/10'
                 }`}>
-                  <Wrench className={`h-7 w-7 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <Wrench className={`h-7 w-7 ${dm ? 'text-blue-400' : 'text-blue-600'}`} />
                 </div>
-                <h3 className={`text-2xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Something Broke? We Got You {'\ud83d\udd27'}
+                <h3 className={`text-2xl font-bold mb-3 ${dm ? 'text-white' : 'text-gray-900'}`}>
+                  Something Broke? We Got You 🔧
                 </h3>
-                <p className={`text-lg mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-lg mb-6 ${dm ? 'text-gray-300' : 'text-gray-600'}`}>
                   AC dead? Pipe burst? Book a verified pro in 30 secs. No stories.
                 </p>
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -171,7 +165,7 @@ export default function Home() {
                     <span
                       key={service}
                       className={`px-3 py-1 rounded-full text-sm ${
-                        isDarkMode ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-100 text-blue-700'
+                        dm ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-100 text-blue-700'
                       }`}
                     >
                       {service}
@@ -179,7 +173,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className={`flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all ${
-                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                  dm ? 'text-blue-400' : 'text-blue-600'
                 }`}>
                   Find a Guy Now <ArrowRight className="h-4 w-4" />
                 </div>
@@ -190,28 +184,28 @@ export default function Home() {
 
           <Link href="/vibefind">
             <div className={`group relative overflow-hidden rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
-              isDarkMode
+              dm
                 ? 'bg-gradient-to-br from-purple-900/50 to-pink-900/50 border border-purple-700/50 hover:border-purple-500'
                 : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 hover:border-purple-400 hover:shadow-2xl'
             }`}>
               <div className="relative z-10">
                 <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-6 ${
-                  isDarkMode ? 'bg-purple-500/20' : 'bg-purple-500/10'
+                  dm ? 'bg-purple-500/20' : 'bg-purple-500/10'
                 }`}>
-                  <Sparkles className={`h-7 w-7 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  <Sparkles className={`h-7 w-7 ${dm ? 'text-purple-400' : 'text-purple-600'}`} />
                 </div>
-                <h3 className={`text-2xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Where&apos;s the Vibe Tonight? {'\u2728'}
+                <h3 className={`text-2xl font-bold mb-3 ${dm ? 'text-white' : 'text-gray-900'}`}>
+                  Where&apos;s the Vibe Tonight? ✨
                 </h3>
-                <p className={`text-lg mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Parties, food crawls, rooftop vibes &mdash; find where Lagos is linking up.
+                <p className={`text-lg mb-6 ${dm ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Parties, food crawls, rooftop vibes — find where Lagos is linking up.
                 </p>
                 <div className="flex flex-wrap gap-2 mb-6">
                   {['Parties', 'Food Tours', 'Live Music', 'Owambe'].map((vibe) => (
                     <span
                       key={vibe}
                       className={`px-3 py-1 rounded-full text-sm ${
-                        isDarkMode ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-100 text-purple-700'
+                        dm ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-100 text-purple-700'
                       }`}
                     >
                       {vibe}
@@ -219,7 +213,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className={`flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all ${
-                  isDarkMode ? 'text-purple-400' : 'text-purple-600'
+                  dm ? 'text-purple-400' : 'text-purple-600'
                 }`}>
                   Show Me the Vibes <ArrowRight className="h-4 w-4" />
                 </div>
@@ -232,40 +226,40 @@ export default function Home() {
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <div className="text-center">
             <div className={`inline-flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
-              isDarkMode ? 'bg-green-500/20' : 'bg-green-100'
+              dm ? 'bg-green-500/20' : 'bg-green-100'
             }`}>
-              <Shield className={`h-6 w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <Shield className={`h-6 w-6 ${dm ? 'text-green-400' : 'text-green-600'}`} />
             </div>
-            <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h4 className={`font-semibold mb-2 ${dm ? 'text-white' : 'text-gray-900'}`}>
               No Scammers Here
             </h4>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-sm ${dm ? 'text-gray-400' : 'text-gray-600'}`}>
               Every pro is verified. We block the rubbish ones.
             </p>
           </div>
           <div className="text-center">
             <div className={`inline-flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
-              isDarkMode ? 'bg-orange-500/20' : 'bg-orange-100'
+              dm ? 'bg-orange-500/20' : 'bg-orange-100'
             }`}>
-              <Zap className={`h-6 w-6 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} />
+              <Zap className={`h-6 w-6 ${dm ? 'text-orange-400' : 'text-orange-600'}`} />
             </div>
-            <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h4 className={`font-semibold mb-2 ${dm ? 'text-white' : 'text-gray-900'}`}>
               Fast Like Lagos Traffic Isn&apos;t
             </h4>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-sm ${dm ? 'text-gray-400' : 'text-gray-600'}`}>
               Book a pro or RSVP to a rave in under 30 seconds
             </p>
           </div>
           <div className="text-center">
             <div className={`inline-flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
-              isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
+              dm ? 'bg-blue-500/20' : 'bg-blue-100'
             }`}>
-              <Users className={`h-6 w-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <Users className={`h-6 w-6 ${dm ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
-            <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h4 className={`font-semibold mb-2 ${dm ? 'text-white' : 'text-gray-900'}`}>
               Community Rated
             </h4>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-sm ${dm ? 'text-gray-400' : 'text-gray-600'}`}>
               Real reviews from real Lagos people. No fake 5-stars.
             </p>
           </div>
