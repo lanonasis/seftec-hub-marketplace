@@ -5,6 +5,7 @@ const nextConfig = {
     "*.replit.app",
     "*.picard.replit.dev",
     "*.kirk.replit.dev",
+    "*.riker.replit.dev",
     "localhost",
     "127.0.0.1",
     "0.0.0.0"
