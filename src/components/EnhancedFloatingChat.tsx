@@ -1,15 +1,9 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls, useMotionValue } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import {
-  X,
-  Send,
-  Loader2,
-  Trash2,
-  ChevronDown
-} from 'lucide-react'
+import { X, Send, Loader2, Trash2, ChevronDown } from 'lucide-react'
 import { themes, Theme, getThemeClasses } from '@/lib/themes'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 
@@ -39,6 +33,17 @@ const LeoAvatar = ({ className = "h-6 w-6" }: { className?: string }) => (
   </svg>
 )
 
+const GripHandle = ({ isDarkTheme }: { isDarkTheme: boolean }) => (
+  <div className="flex items-center justify-center gap-[3px] py-1.5">
+    {[0,1,2,3,4,5].map(i => (
+      <div
+        key={i}
+        className={`h-[3px] w-[3px] rounded-full ${isDarkTheme ? 'bg-gray-500' : 'bg-gray-300'}`}
+      />
+    ))}
+  </div>
+)
+
 const TypingIndicator = ({ isDarkTheme }: { isDarkTheme: boolean }) => (
   <div className="flex items-center space-x-1">
     {[0, 1, 2].map((i) => (
@@ -57,16 +62,23 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
   initialTheme = 'cyberpunk'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<Theme>(initialTheme)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchStartYRef = useRef<number>(0)
+  const dragConstraintRef = useRef<HTMLDivElement>(null)
+
+  const dragControls = useDragControls()
+  const panelX = useMotionValue(0)
+  const panelY = useMotionValue(0)
 
   const themeConfig = getThemeClasses(currentTheme)
   const isDarkTheme = currentTheme === 'cyberpunk' || currentTheme === 'galaxy'
@@ -83,8 +95,10 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
 
   const resetIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-    idleTimerRef.current = setTimeout(collapse, IDLE_TIMEOUT_MS)
-  }, [collapse])
+    idleTimerRef.current = setTimeout(() => {
+      if (!isHovered) collapse()
+    }, IDLE_TIMEOUT_MS)
+  }, [collapse, isHovered])
 
   const clearIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
@@ -130,13 +144,23 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
 
   useEffect(() => {
     if (isExpanded) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+      panelX.set(0)
+      panelY.set(0)
+      setTimeout(() => inputRef.current?.focus(), 120)
       resetIdleTimer()
     } else {
       clearIdleTimer()
     }
     return () => clearIdleTimer()
-  }, [isExpanded, resetIdleTimer, clearIdleTimer])
+  }, [isExpanded])
+
+  useEffect(() => {
+    if (isHovered && idleTimerRef.current) {
+      clearIdleTimer()
+    } else if (!isHovered && isExpanded) {
+      resetIdleTimer()
+    }
+  }, [isHovered])
 
   const handleClearConversation = () => {
     setMessages([defaultWelcomeMessage])
@@ -148,14 +172,12 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     if (!messageText || isTyping) return
 
     resetIdleTimer()
-
     const userMessage: Message = {
       id: Date.now().toString(),
       text: messageText,
       sender: 'user',
       timestamp: new Date()
     }
-
     setMessages(prev => [...prev, userMessage])
     setInputText('')
     setIsTyping(true)
@@ -211,13 +233,25 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     if (delta > 60) collapse()
   }
 
+  const startDrag = (e: React.PointerEvent) => {
+    dragControls.start(e)
+  }
+
   return (
     <>
+      {/* Full-viewport drag constraint boundary */}
+      <div
+        ref={dragConstraintRef}
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: 40 }}
+      />
+
+      {/* Floating button — collapsed state */}
       <AnimatePresence>
         {!isExpanded && (
           <motion.div
             className={`fixed z-50 ${className || ''}`}
-            style={{ bottom: 20, right: 20 }}
+            style={{ bottom: 20, right: 20, pointerEvents: 'auto' }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -245,24 +279,42 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Expanded chat panel */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={dragConstraintRef}
+            dragMomentum={false}
+            dragElastic={0.04}
+            onDragStart={() => { setIsDragging(true); clearIdleTimer() }}
+            onDragEnd={() => { setIsDragging(false); resetIdleTimer() }}
             className="fixed z-50"
-            style={{ bottom: 20, right: 20 }}
-            initial={{ opacity: 0, scale: 0.85, y: 30, originX: 1, originY: 1 }}
+            style={{
+              bottom: 20,
+              right: 20,
+              x: panelX,
+              y: panelY,
+              pointerEvents: 'auto',
+              touchAction: 'none',
+            }}
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.85, y: 30 }}
+            exit={{ opacity: 0, scale: 0.88, y: 24 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
             <div
               className={`
-                w-[90vw] max-w-[360px]
-                flex flex-col
+                w-[90vw] max-w-[360px] flex flex-col
                 backdrop-blur-xl rounded-3xl shadow-2xl border overflow-hidden
                 ${themeConfig.surface}
+                ${isDragging ? 'shadow-[0_20px_60px_rgba(0,0,0,0.35)]' : ''}
               `}
               style={{
                 height: 'min(520px, calc(100dvh - 100px))',
@@ -271,12 +323,25 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                   : 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)'
               }}
             >
+              {/* ── Drag grip strip ── */}
               <div
-                className={`flex items-center justify-between px-4 py-3 border-b shrink-0 cursor-grab active:cursor-grabbing ${
+                onPointerDown={startDrag}
+                className={`shrink-0 cursor-grab active:cursor-grabbing select-none rounded-t-3xl ${
+                  isDarkTheme ? 'bg-gray-800/80' : 'bg-gray-50/80'
+                }`}
+                title="Drag to move"
+              >
+                <GripHandle isDarkTheme={isDarkTheme} />
+              </div>
+
+              {/* ── Header ── */}
+              <div
+                onPointerDown={startDrag}
+                className={`flex items-center justify-between px-4 py-2.5 border-b shrink-0 cursor-grab active:cursor-grabbing select-none ${
                   isDarkTheme ? 'bg-gray-800/60 border-gray-700' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-orange-100'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 pointer-events-none">
                   <div className={`h-9 w-9 rounded-full flex items-center justify-center bg-gradient-to-r ${themeConfig.primary} ring-2 ring-yellow-400/40`}>
                     <LeoAvatar className="h-5 w-5" />
                   </div>
@@ -286,7 +351,7 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" onPointerDown={e => e.stopPropagation()}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -315,8 +380,10 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 </div>
               </div>
 
+              {/* ── Messages ── */}
               <div
                 className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0"
+                onPointerDown={e => e.stopPropagation()}
                 onMouseMove={resetIdleTimer}
                 onTouchMove={resetIdleTimer}
               >
@@ -376,9 +443,13 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className={`p-3 border-t shrink-0 ${
-                isDarkTheme ? 'border-gray-700 bg-gray-900/60' : 'border-orange-100 bg-white/90'
-              }`}>
+              {/* ── Input bar ── */}
+              <div
+                className={`p-3 border-t shrink-0 ${
+                  isDarkTheme ? 'border-gray-700 bg-gray-900/60' : 'border-orange-100 bg-white/90'
+                }`}
+                onPointerDown={e => e.stopPropagation()}
+              >
                 <div className="flex items-center gap-2">
                   <input
                     ref={inputRef}
@@ -411,10 +482,10 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 </div>
                 <button
                   onClick={collapse}
-                  className={`w-full flex items-center justify-center gap-1 mt-2 text-[11px] transition-opacity opacity-40 hover:opacity-70 ${themeConfig.textSecondary}`}
+                  className={`w-full flex items-center justify-center gap-1 mt-2 text-[11px] transition-opacity opacity-30 hover:opacity-60 ${themeConfig.textSecondary}`}
                 >
                   <ChevronDown className="h-3 w-3" />
-                  swipe down or tap to close
+                  swipe down or tap to close · auto-hides after 10s
                 </button>
               </div>
             </div>
