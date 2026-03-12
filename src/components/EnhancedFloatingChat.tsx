@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X, Send, Loader2, Trash2, ChevronDown } from 'lucide-react'
 import { themes, Theme, getThemeClasses } from '@/lib/themes'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
+import { useRouter } from 'next/navigation'
 
 interface Message {
   id: string
@@ -75,20 +76,23 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchStartYRef = useRef<number>(0)
   const dragConstraintRef = useRef<HTMLDivElement>(null)
+  const autoOpenReplyCallbackRef = useRef<((text: string) => void) | null>(null)
 
   const dragControls = useDragControls()
   const panelX = useMotionValue(0)
   const panelY = useMotionValue(0)
+
+  const router = useRouter()
 
   const themeConfig = getThemeClasses(currentTheme)
   const isDarkTheme = currentTheme === 'cyberpunk' || currentTheme === 'galaxy'
 
   const defaultWelcomeMessage: Message = {
     id: '1',
-    text: "Yo babe 👀 what's the move tonight? Vibes or fixes?",
+    text: "Yo babe \ud83d\udc40 what's the move tonight? Vibes or fixes?",
     sender: 'ai',
     timestamp: new Date(),
-    suggestions: ["Party tonight 🎉", "Rooftop drinks 🥂", "Need a plumber 🔧", "Food crawl 🍜"]
+    suggestions: ["Party tonight \ud83c\udf89", "Rooftop drinks \ud83e\udd42", "Need a plumber \ud83d\udd27", "Food crawl \ud83c\udf5c"]
   }
 
   const collapse = useCallback(() => setIsExpanded(false), [])
@@ -162,6 +166,48 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     }
   }, [isHovered])
 
+  useEffect(() => {
+    const handleAutoOpen = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.message) {
+        setIsExpanded(true)
+        const msg: Message = {
+          id: `auto-${Date.now()}`,
+          text: detail.message,
+          sender: 'ai',
+          timestamp: new Date(),
+          suggestions: ["Vibe \ud83c\udf89", "Fix something \ud83d\udd27"]
+        }
+        setMessages(prev => [...prev, msg])
+        if (detail.onReply) {
+          autoOpenReplyCallbackRef.current = detail.onReply
+        }
+      }
+    }
+
+    const handleInjectMessage = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.text) {
+        setIsExpanded(true)
+        const msg: Message = {
+          id: `inject-${Date.now()}`,
+          text: detail.text,
+          sender: 'ai',
+          timestamp: new Date(),
+          suggestions: detail.suggestions || []
+        }
+        setMessages(prev => [...prev, msg])
+      }
+    }
+
+    window.addEventListener('leo-auto-open', handleAutoOpen)
+    window.addEventListener('leo-inject-message', handleInjectMessage)
+    return () => {
+      window.removeEventListener('leo-auto-open', handleAutoOpen)
+      window.removeEventListener('leo-inject-message', handleInjectMessage)
+    }
+  }, [])
+
   const handleClearConversation = () => {
     setMessages([defaultWelcomeMessage])
     resetIdleTimer()
@@ -170,6 +216,16 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim()
     if (!messageText || isTyping) return
+
+    if (autoOpenReplyCallbackRef.current) {
+      autoOpenReplyCallbackRef.current(messageText)
+      autoOpenReplyCallbackRef.current = null
+    }
+
+    const lower = messageText.toLowerCase()
+    if (lower.includes('handyman hub') || lower.includes('take me to handyman')) {
+      router.push('/handyman')
+    }
 
     resetIdleTimer()
     const userMessage: Message = {
@@ -194,6 +250,20 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
       })
 
       const aiResponse = await response.json()
+
+      const aiText = aiResponse.text || ''
+      const aiLower = aiText.toLowerCase()
+      if (aiLower.includes('vibe') || aiLower.includes('party') || aiLower.includes('event')) {
+        if (lower.includes('party') || lower.includes('vibe') || lower.includes('event') || lower.includes('rave')) {
+          setTimeout(() => router.push('/vibefind'), 1500)
+        }
+      }
+      if (aiLower.includes('handyman') || aiLower.includes('fix') || aiLower.includes('plumb') || aiLower.includes('ac')) {
+        if (lower.includes('fix') || lower.includes('ac') || lower.includes('handyman') || lower.includes('plumb') || lower.includes('electric')) {
+          setTimeout(() => router.push('/handyman'), 1500)
+        }
+      }
+
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         text: aiResponse.text,
@@ -205,10 +275,10 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
     } catch {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "Ugh, signal dropped 😤 but yo—party or fix? I got you.",
+        text: "Ugh, signal dropped \ud83d\ude24 but yo\u2014party or fix? I got you.",
         sender: 'ai',
         timestamp: new Date(),
-        suggestions: ["Party tonight 🎉", "Rooftop drinks 🥂", "Need a plumber 🔧", "Food crawl 🍜"],
+        suggestions: ["Party tonight \ud83c\udf89", "Rooftop drinks \ud83e\udd42", "Need a plumber \ud83d\udd27", "Food crawl \ud83c\udf5c"],
         provider: 'fallback'
       }])
     } finally {
@@ -239,14 +309,12 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
 
   return (
     <>
-      {/* Full-viewport drag constraint boundary */}
       <div
         ref={dragConstraintRef}
         className="fixed inset-0 pointer-events-none"
         style={{ zIndex: 40 }}
       />
 
-      {/* Floating button — collapsed state */}
       <AnimatePresence>
         {!isExpanded && (
           <motion.div
@@ -279,7 +347,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Expanded chat panel */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -323,7 +390,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                   : 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)'
               }}
             >
-              {/* ── Drag grip strip ── */}
               <div
                 onPointerDown={startDrag}
                 className={`shrink-0 cursor-grab active:cursor-grabbing select-none rounded-t-3xl overflow-hidden ${
@@ -334,7 +400,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 <GripHandle isDarkTheme={isDarkTheme} />
               </div>
 
-              {/* ── Header ── */}
               <div
                 onPointerDown={startDrag}
                 className={`flex items-center justify-between px-4 py-2.5 border-b shrink-0 cursor-grab active:cursor-grabbing select-none ${
@@ -346,8 +411,8 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                     <LeoAvatar className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className={`font-bold text-sm ${themeConfig.text}`}>Leo 🦁</h3>
-                    <p className={`text-xs ${themeConfig.textSecondary}`}>your Lagos plug ✦</p>
+                    <h3 className={`font-bold text-sm ${themeConfig.text}`}>Leo {'\ud83e\udd81'}</h3>
+                    <p className={`text-xs ${themeConfig.textSecondary}`}>your Lagos plug {'\u2726'}</p>
                   </div>
                 </div>
 
@@ -380,7 +445,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 </div>
               </div>
 
-              {/* ── Messages ── */}
               <div
                 className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0"
                 onPointerDown={e => e.stopPropagation()}
@@ -443,7 +507,6 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* ── Input bar ── */}
               <div
                 className={`p-3 border-t shrink-0 rounded-b-3xl ${
                   isDarkTheme ? 'border-gray-700 bg-gray-900/60' : 'border-orange-100 bg-white/90'
@@ -485,7 +548,7 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
                   className={`w-full flex items-center justify-center gap-1 mt-2 text-[11px] transition-opacity opacity-30 hover:opacity-60 ${themeConfig.textSecondary}`}
                 >
                   <ChevronDown className="h-3 w-3" />
-                  swipe down or tap to close · auto-hides after 10s
+                  swipe down or tap to close {'\u00b7'} auto-hides after 10s
                 </button>
               </div>
             </div>

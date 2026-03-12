@@ -20,6 +20,8 @@ export interface HandymanResult {
   availability: string
   verified: boolean
   image?: string
+  phone?: string
+  reviews?: number
 }
 
 export interface BusinessResult {
@@ -204,38 +206,87 @@ Remember: You're curating experiences that make users' lives better!`
     const mockHandymen: HandymanResult[] = [
       {
         id: 'h1',
-        name: 'Mike the Plumber',
+        name: 'Chidi the Plumber',
         rating: 4.9,
-        price_range: '$50-80/hr',
-        distance: '0.8mi',
-        services: ['Plumbing', 'Leak Repair', 'Emergency Service'],
+        price_range: '₦12k–₦18k',
+        distance: 'Lekki Phase 1',
+        services: ['Plumbing', 'Leak Repair', 'Emergency Service', 'Pipe Fitting'],
         availability: 'Available now',
         verified: true,
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        phone: '2348012345678',
+        reviews: 67
       },
       {
         id: 'h2',
-        name: 'Sarah\'s Home Repairs',
+        name: 'Tunde Electrical Works',
         rating: 4.8,
-        price_range: '$40-65/hr',
-        distance: '1.2mi',
-        services: ['General Repairs', 'Electrical', 'Painting'],
+        price_range: '₦10k–₦20k',
+        distance: 'Victoria Island',
+        services: ['Electrical', 'AC Repair', 'Generator Servicing', 'Wiring'],
         availability: 'Tomorrow morning',
         verified: true,
-        image: 'https://images.unsplash.com/photo-1494790108755-2616b612b372?w=150&h=150&fit=crop&crop=face'
+        image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        phone: '2348023456789',
+        reviews: 52
       },
       {
         id: 'h3',
-        name: 'Carlos Landscaping',
+        name: 'Blessing Home Repairs',
         rating: 4.7,
-        price_range: '$35-55/hr',
-        distance: '0.4mi',
-        services: ['Gardening', 'Tree Trimming', 'Lawn Care'],
+        price_range: '₦8k–₦15k',
+        distance: 'Ikeja',
+        services: ['General Repairs', 'Painting', 'Carpentry', 'Tiling'],
         availability: 'This weekend',
         verified: true,
-        image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+        image: 'https://images.unsplash.com/photo-1494790108755-2616b612b372?w=150&h=150&fit=crop&crop=face',
+        phone: '2348034567890',
+        reviews: 38
+      },
+      {
+        id: 'h4',
+        name: 'Emeka AC & Cooling',
+        rating: 4.9,
+        price_range: '₦15k flat',
+        distance: 'Surulere',
+        services: ['AC Repair', 'AC Installation', 'Refrigerator Repair', 'Electrical'],
+        availability: 'Available now',
+        verified: true,
+        image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
+        phone: '2348045678901',
+        reviews: 91
+      },
+      {
+        id: 'h5',
+        name: 'Yemi Clean Team',
+        rating: 4.6,
+        price_range: '₦10k–₦25k',
+        distance: 'Ajah',
+        services: ['Deep Cleaning', 'Fumigation', 'Laundry Service', 'Cleaner'],
+        availability: 'Same day',
+        verified: true,
+        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
+        phone: '2348056789012',
+        reviews: 44
+      },
+      {
+        id: 'h6',
+        name: 'Ade Mechanics',
+        rating: 4.8,
+        price_range: '₦5k–₦30k',
+        distance: 'Gbagada',
+        services: ['Mechanic', 'Car Repairs', 'Panel Beating', 'Auto Electrical'],
+        availability: 'Available now',
+        verified: true,
+        image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
+        phone: '2348067890123',
+        reviews: 73
       }
     ]
+
+    if (service.toLowerCase() === 'general') {
+      return mockHandymen
+    }
 
     return mockHandymen.filter(handyman =>
       handyman.services.some(s => s.toLowerCase().includes(service.toLowerCase()))
