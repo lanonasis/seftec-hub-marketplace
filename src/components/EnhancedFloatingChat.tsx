@@ -312,7 +312,7 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
             <div
               className={`
                 w-[90vw] max-w-[360px] flex flex-col
-                backdrop-blur-xl rounded-3xl shadow-2xl border overflow-hidden
+                backdrop-blur-xl rounded-3xl shadow-2xl border
                 ${themeConfig.surface}
                 ${isDragging ? 'shadow-[0_20px_60px_rgba(0,0,0,0.35)]' : ''}
               `}
@@ -326,7 +326,7 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
               {/* ── Drag grip strip ── */}
               <div
                 onPointerDown={startDrag}
-                className={`shrink-0 cursor-grab active:cursor-grabbing select-none rounded-t-3xl ${
+                className={`shrink-0 cursor-grab active:cursor-grabbing select-none rounded-t-3xl overflow-hidden ${
                   isDarkTheme ? 'bg-gray-800/80' : 'bg-gray-50/80'
                 }`}
                 title="Drag to move"
@@ -445,7 +445,7 @@ const EnhancedFloatingChat: React.FC<EnhancedFloatingChatProps> = ({
 
               {/* ── Input bar ── */}
               <div
-                className={`p-3 border-t shrink-0 ${
+                className={`p-3 border-t shrink-0 rounded-b-3xl ${
                   isDarkTheme ? 'border-gray-700 bg-gray-900/60' : 'border-orange-100 bg-white/90'
                 }`}
                 onPointerDown={e => e.stopPropagation()}
