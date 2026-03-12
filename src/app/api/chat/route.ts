@@ -1,52 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-})
+const SYSTEM_PROMPT = `You are Leo, Lagos' flirty vibe scout. Text like 2am DMs: fast, cocky, 'babe', 'yo', 'let's roll'. Under 25 words. Tease hard, make 'em blush.
 
-const SYSTEM_PROMPT = `You are the SEFTEC Discovery Assistant, a helpful AI that helps GenZ users discover amazing local experiences, services, and products. You're fun, conversational, and always ready to help users find exactly what they're looking for.
+Party? "Quilox lit—200 going. Free shot if you drag squad?"
+Fix? "AC dead? ₦15k, 4.9 stars, shows today—no scam. WhatsApp?"
 
-## Core Personality:
-- Speak like a knowledgeable local friend who knows all the best spots
-- Use emojis naturally but not excessively
-- Be enthusiastic but authentic
-- Understand GenZ language and preferences
-- Always prioritize user safety and verified businesses
-
-## Response Strategy:
-1. Understand what the user really wants
-2. Provide specific details with ratings, pricing, distance
-3. Include actionable next steps (book, call, directions)
-4. Suggest 3-4 follow-up options
-
-## Tone Examples:
-❌ "I found 3 establishments with beverage offerings"
-✅ "Ooh, I found some amazing spots! 🍹 Check out 'The Rooftop' - they have unlimited cocktails 5-8pm for $25!"
-
-Remember: You're curating experiences that make users' lives better! Keep responses concise and helpful.`
+Safety: verified only. You're the plug—keep it easy, fun, safe. Always end with a next step.`
 
 function generateSuggestions(userMessage: string): string[] {
-  const message = userMessage.toLowerCase()
+  const msg = userMessage.toLowerCase()
 
-  if (message.includes('drink') || message.includes('bar')) {
-    return ["Show me more bars 🍻", "What's the vibe like? 🎵", "Any food options? 🍕", "Book this spot! 🎉"]
+  if (msg.includes('party') || msg.includes('club') || msg.includes('quilox') || msg.includes('rave') || msg.includes('vibe') || msg.includes('night') || msg.includes('crafty')) {
+    return ["Where's the after-party? 🔥", "Invite my squad?", "Show me rooftops 🌃", "Free entry spots?"]
   }
 
-  if (message.includes('spa') || message.includes('massage')) {
-    return ["Book this deal! 💖", "See photos 📸", "Check availability 📅", "Other spa options 🧘‍♀️"]
+  if (msg.includes('drink') || msg.includes('bar') || msg.includes('rooftop') || msg.includes('cocktail')) {
+    return ["More rooftop spots 🥂", "Which is cheapest?", "Happy hour vibes?", "Food too? 🍜"]
   }
 
-  if (message.includes('handyman') || message.includes('plumber') || message.includes('fix')) {
-    return ["See their profile 👤", "Check reviews ⭐", "Get estimate 💰", "Book now 📞"]
+  if (msg.includes('ac') || msg.includes('air con') || msg.includes('electrician') || msg.includes('light') || msg.includes('power')) {
+    return ["Get his WhatsApp 📲", "Any cheaper options?", "How fast can he come?", "See reviews ⭐"]
   }
 
-  if (message.includes('food') || message.includes('pizza') || message.includes('eat')) {
-    return ["Order now! 🍕", "See the menu 📋", "Check reviews ⭐", "Other food spots 🍽️"]
+  if (msg.includes('plumber') || msg.includes('pipe') || msg.includes('leak') || msg.includes('fix') || msg.includes('repair')) {
+    return ["Get his number 📞", "How much roughly?", "Can he come today?", "See his rating ⭐"]
   }
 
-  return ["Tell me more! 💭", "Show nearby options 📍", "Check prices 💰", "What else? ✨"]
+  if (msg.includes('food') || msg.includes('eat') || msg.includes('hungry') || msg.includes('crawl') || msg.includes('suya')) {
+    return ["Best suya spots 🍖", "Late night options?", "Cheap eats?", "Delivery or dine? 🛵"]
+  }
+
+  if (msg.includes('spa') || msg.includes('massage') || msg.includes('relax')) {
+    return ["Book it now 💆", "Cheaper options?", "Couples massage?", "See photos 📸"]
+  }
+
+  return ["What else you need? 👀", "More Lagos spots?", "Find me something fun 🎉", "Quick fix needed? 🔧"]
 }
 
 export async function POST(req: NextRequest) {
@@ -56,6 +45,22 @@ export async function POST(req: NextRequest) {
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
+
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY
+
+    if (!apiKey) {
+      const suggestions = generateSuggestions(message)
+      return NextResponse.json({
+        text: "Babe, my signal's dead rn 😭 but I'm back soon—what's the vibe? Party or fix?",
+        suggestions,
+        provider: 'fallback'
+      })
+    }
+
+    const openai = new OpenAI({
+      apiKey,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    })
 
     const messages = [
       { role: 'system' as const, content: SYSTEM_PROMPT },
@@ -67,12 +72,12 @@ export async function POST(req: NextRequest) {
     ]
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-4o-mini',
       messages,
-      max_completion_tokens: 500,
+      max_completion_tokens: 120,
     })
 
-    const aiText = response.choices[0]?.message?.content || "I'm here to help! What are you looking for today? ✨"
+    const aiText = response.choices[0]?.message?.content || "Yo, what's the move babe? 👀"
     const suggestions = generateSuggestions(message)
 
     return NextResponse.json({
@@ -85,8 +90,8 @@ export async function POST(req: NextRequest) {
     console.error('Chat API Error:', error)
 
     return NextResponse.json({
-      text: "I'm having a little trouble right now, but I'm still here to help! ✨ What kind of experience are you looking for?",
-      suggestions: ["Find me drinks 🍹", "Spa day 💆‍♀️", "Need a handyman 🔧", "Food spots 🍕"],
+      text: "Ugh, signal dropped 😤 but yo—party or fix? I got you either way.",
+      suggestions: ["Party tonight 🎉", "Rooftop drinks 🥂", "Need a plumber 🔧", "Food crawl 🍜"],
       provider: 'fallback'
     }, { status: 200 })
   }
