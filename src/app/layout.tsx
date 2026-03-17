@@ -3,15 +3,70 @@ import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 
+const baseUrl = new URL(
+  process.env.NEXT_PUBLIC_BASE_URL || "https://seftec-hub.replit.app"
+);
+
 export const metadata: Metadata = {
-  title: "SEFTEC Hub - AI-Powered Marketplace & Social Discovery",
-  description: "Discover amazing experiences, events, and services with AI assistance. From rooftop bars to handyman services, find your next vibe with SEFTEC Hub.",
-  keywords: ["marketplace", "events", "AI assistant", "local experiences", "social discovery", "handyman services"],
+  metadataBase: baseUrl,
+  title: {
+    default: "SEFTEC Hub — Lagos Marketplace & VibeFind",
+    template: "%s | SEFTEC Hub",
+  },
+  description:
+    "Find Lagos's hottest parties, owambe, and rooftop vibes — or book a verified handyman in 30 secs. SEFTEC Hub is the GenZ marketplace for Lagos.",
+  keywords: [
+    "Lagos events",
+    "Lagos nightlife",
+    "owambe",
+    "Lagos handyman",
+    "VibeFind Lagos",
+    "Lagos parties",
+    "book handyman Lagos",
+    "Lagos marketplace",
+    "SEFTEC Hub",
+    "Leo AI",
+  ],
   authors: [{ name: "SEFTEC Hub" }],
+  creator: "SEFTEC Hub",
+  publisher: "SEFTEC Hub",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "SEFTEC Hub - AI-Powered Marketplace",
-    description: "Discover amazing experiences and events with AI assistance",
     type: "website",
+    siteName: "SEFTEC Hub",
+    title: "SEFTEC Hub — Lagos, Where You Dey Tonight? 🔥",
+    description:
+      "Find Lagos's hottest parties, owambe, and rooftop vibes — or book a verified handyman in 30 secs. No dull moment.",
+    url: baseUrl.href,
+    locale: "en_NG",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "SEFTEC Hub — Lagos Marketplace & VibeFind",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SEFTEC Hub — Lagos, Where You Dey Tonight? 🔥",
+    description:
+      "Find Lagos's hottest parties, owambe, and rooftop vibes — or book a verified handyman in 30 secs.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
